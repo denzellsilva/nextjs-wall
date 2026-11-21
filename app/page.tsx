@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MapPin } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -18,39 +19,74 @@ type Post = {
 
 const profileName = "Marl Denzell J. Silva";
 
-const initialPosts: Post[] = [
-  {
-    id: "1",
-    authorName: "Anna",
-    body: "Hey Marl, did you debug your coffee maker yet? Last cup tasted like JavaScript errors.",
-    createdAt: "2026-11-19T20:20:00+08:00",
-    relativeTime: "4h",
-  },
-  {
-    id: "2",
-    authorName: "Adelaida",
-    body: "Marl, saw your last coding session—pretty sure you broke Stack Overflow again!",
-    createdAt: "2026-11-19T18:45:00+08:00",
-    relativeTime: "6h",
-  },
-  {
-    id: "3",
-    authorName: "Juho",
-    body: "Are you still coding in pajamas, or have you upgraded to full-time sweatpants mode?",
-    createdAt: "2026-11-19T14:10:00+08:00",
-    relativeTime: "10h",
-  },
-  {
-    id: "4",
-    authorName: "Maija",
-    body: "Rumor has it your computer has more stickers than code running on it. Confirm?",
-    createdAt: "2026-11-18T21:30:00+08:00",
-    relativeTime: "1d",
-  },
-];
+type PostRow = {
+  id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+};
+
+function formatRelativeTime(createdAt: string) {
+  const elapsed = Date.now() - new Date(createdAt).getTime();
+  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function mapPost(row: PostRow): Post {
+  return {
+    id: row.id,
+    authorName: row.author_name,
+    body: row.body,
+    createdAt: row.created_at,
+    relativeTime: formatRelativeTime(row.created_at),
+  };
+}
 
 export default function Home() {
-  const [posts] = useState(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadPosts() {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, author_name, body, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (!error && data) {
+        setPosts(data.map(mapPost));
+      }
+    }
+
+    const channel = supabase
+      .channel("posts", { config: { private: false } })
+      .on("broadcast", { event: "*" }, (payload) => {
+        if (payload.event === "INSERT") {
+          const inserted = mapPost(payload.payload as PostRow);
+          setPosts((current) =>
+            current.some((post) => post.id === inserted.id)
+              ? current
+              : [inserted, ...current].slice(0, 50),
+          );
+        }
+      })
+      .subscribe();
+
+    loadPosts();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#f7f8fa]">
@@ -95,10 +131,7 @@ export default function Home() {
         </aside>
 
         <section className="min-w-0 space-y-4">
-          <CreatePostForm
-            authorName={profileName}
-            avatarSrc="/denzell.jpg"
-          />
+          <CreatePostForm authorName={profileName} avatarSrc="/denzell.jpg" />
 
           <div className="space-y-3">
             {posts.map((post) => (
