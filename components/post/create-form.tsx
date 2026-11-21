@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Send } from "lucide-react";
-import { submitPost, type SubmitPostState } from "@/app/posts/actions";
+import { submitPost, type SubmitPostState } from "@/actions/posts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,10 +13,7 @@ type CreatePostFormProps = {
   avatarSrc: string;
 };
 
-export function CreatePostForm({
-  authorName,
-  avatarSrc,
-}: CreatePostFormProps) {
+export function CreatePostForm({ authorName, avatarSrc }: CreatePostFormProps) {
   const [body, setBody] = useState("");
   const [state, formAction, pending] = useActionState<
     SubmitPostState,
