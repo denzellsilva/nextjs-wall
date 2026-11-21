@@ -1,7 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+
+const submitPostSchema = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, "Post cannot be empty.")
+    .max(280, "Post cannot exceed 280 characters."),
+});
 
 export type SubmitPostState = {
   success: boolean;
@@ -13,14 +22,15 @@ export async function submitPost(
   _previousState: SubmitPostState,
   formData: FormData,
 ): Promise<SubmitPostState> {
-  const body = String(formData.get("body") ?? "").trim();
+  const result = submitPostSchema.safeParse({
+    body: formData.get("body"),
+  });
 
-  if (!body) {
-    return { success: false, error: "Post cannot be empty." };
-  }
-
-  if (body.length > 280) {
-    return { success: false, error: "Post cannot exceed 280 characters." };
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error.issues[0]?.message ?? "Invalid post.",
+    };
   }
 
   const supabase = await createClient();
@@ -28,7 +38,7 @@ export async function submitPost(
     .from("posts")
     .insert({
       author_name: "Marl Denzell J. Silva",
-      body,
+      body: result.data.body,
     })
     .select("id, author_name, body, created_at")
     .single();
