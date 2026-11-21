@@ -73,42 +73,44 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f7f8fa]">
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <Card className="overflow-hidden py-0">
-            <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
-              <Image
-                src="/denzell.jpg"
-                alt={profileName}
-                fill
-                sizes="260px"
-                className="object-cover"
-                priority
-              />
-            </div>
-            <CardContent className="pb-5 pt-4">
-              <h1 className="text-xl font-semibold leading-tight">
-                {profileName}
-              </h1>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <h2 className="font-semibold">About</h2>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="size-4" />
-                <span>Manila, Philippines</span>
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:grid-cols-[260px_minmax(0,1fr)]">
+        <aside>
+          <div className="sticky top-6 space-y-4">
+            <Card className="overflow-hidden py-0">
+              <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                <Image
+                  src="/denzell.jpg"
+                  alt={profileName}
+                  fill
+                  sizes="260px"
+                  className="object-cover"
+                  priority
+                />
               </div>
-              <Separator />
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Building, learning, and sharing a little of the journey along
-                the way.
-              </p>
-            </CardContent>
-          </Card>
+              <CardContent className="pb-5 pt-4">
+                <h1 className="text-xl font-semibold leading-tight">
+                  {profileName}
+                </h1>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <h2 className="font-semibold">About</h2>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="size-4" />
+                  <span>Manila, Philippines</span>
+                </div>
+                <Separator />
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Building, learning, and sharing a little of the journey along
+                  the way.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </aside>
 
         <section className="min-w-0 space-y-4">
