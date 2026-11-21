@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MapPin, Send } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
+import { CreatePostForm } from "@/components/post/create-form";
 
 type Post = {
   id: string;
@@ -51,25 +50,7 @@ const initialPosts: Post[] = [
 ];
 
 export default function Home() {
-  const [body, setBody] = useState("");
-  const [posts, setPosts] = useState(initialPosts);
-  const trimmedBody = body.trim();
-  const canShare = trimmedBody.length > 0 && trimmedBody.length <= 280;
-
-  function handleShare() {
-    if (!canShare) return;
-
-    const nextPost: Post = {
-      id: crypto.randomUUID(),
-      authorName: profileName,
-      body: trimmedBody,
-      createdAt: new Date().toISOString(),
-      relativeTime: "Just now",
-    };
-
-    setPosts((currentPosts) => [nextPost, ...currentPosts]);
-    setBody("");
-  }
+  const [posts] = useState(initialPosts);
 
   return (
     <main className="min-h-screen bg-[#f7f8fa]">
@@ -114,48 +95,10 @@ export default function Home() {
         </aside>
 
         <section className="min-w-0 space-y-4">
-          <Card>
-            <CardHeader>
-              <h2 className="font-semibold">Create a post</h2>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                <Avatar className="mt-1" size="lg">
-                  <AvatarImage src="/denzell.jpg" alt={profileName} />
-                  <AvatarFallback>MS</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <Textarea
-                    value={body}
-                    onChange={(event) => setBody(event.target.value)}
-                    maxLength={280}
-                    placeholder="What's on your mind?"
-                    className="min-h-24 resize-none"
-                    aria-label="Post text"
-                  />
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <span
-                      className={
-                        body.length >= 260
-                          ? "text-xs font-medium text-destructive"
-                          : "text-xs text-muted-foreground"
-                      }
-                    >
-                      {body.length}/280
-                    </span>
-                    <Button
-                      type="button"
-                      onClick={handleShare}
-                      disabled={!canShare}
-                    >
-                      <Send />
-                      Share
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CreatePostForm
+            authorName={profileName}
+            avatarSrc="/denzell.jpg"
+          />
 
           <div className="space-y-3">
             {posts.map((post) => (
