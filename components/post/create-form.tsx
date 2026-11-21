@@ -44,10 +44,13 @@ export function CreatePostForm({ authorName, avatarSrc }: CreatePostFormProps) {
               onChange={(event) => setBody(event.target.value)}
               maxLength={280}
               placeholder="What's on your mind?"
-              className="min-h-24 resize-none"
+              className="min-h-24 resize-none mb-2"
               aria-label="Post text"
             />
-            <div className="mt-3 flex items-center justify-between gap-3">
+            {state.error ? (
+              <p className="text-xs text-destructive">{state.error}</p>
+            ) : null}
+            <div className="flex items-center justify-between gap-3">
               <span
                 className={
                   body.length >= 260
@@ -61,9 +64,6 @@ export function CreatePostForm({ authorName, avatarSrc }: CreatePostFormProps) {
                 <Send />
                 {pending ? "Sharing..." : "Share"}
               </Button>
-              {state.error ? (
-                <p className="mt-2 text-xs text-destructive">{state.error}</p>
-              ) : null}
             </div>
           </form>
         </div>
