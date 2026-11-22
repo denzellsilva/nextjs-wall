@@ -55,6 +55,8 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
 
+    supabase.realtime.setAuth();
+
     async function loadPosts() {
       const { data, error } = await supabase
         .from("posts")
@@ -68,7 +70,7 @@ export default function Home() {
     }
 
     const channel = supabase
-      .channel("posts", { config: { private: false } })
+      .channel("posts", { config: { private: true } })
       .on("broadcast", { event: "*" }, (payload) => {
         if (payload.event === "INSERT") {
           const inserted = mapPost(payload.payload as PostRow);
