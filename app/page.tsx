@@ -1,21 +1,12 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import Image from "next/image";
 import { MapPin } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CreatePostForm } from "@/components/post/create-form";
-
-type Post = {
-  id: string;
-  authorName: string;
-  body: string;
-  createdAt: string;
-  relativeTime: string;
-};
+import { PostFeed, type Post } from "@/components/post/post-feed";
+import { PostFeedSkeleton } from "@/components/post/post-card-skeleton";
+import { createClient } from "@/lib/supabase/server";
 
 const profileName = "Marl Denzell J. Silva";
 
@@ -26,70 +17,46 @@ type PostRow = {
   created_at: string;
 };
 
-function formatRelativeTime(createdAt: string) {
-  const elapsed = Date.now() - new Date(createdAt).getTime();
-  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+async function Posts() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, author_name, body, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m`;
+  if (error) {
+    throw new Error(error.message);
+  }
 
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-
-  return `${Math.floor(hours / 24)}d`;
-}
-
-function mapPost(row: PostRow): Post {
-  return {
+  const initialPosts: Post[] = (data as PostRow[]).map((row) => ({
     id: row.id,
     authorName: row.author_name,
     body: row.body,
     createdAt: row.created_at,
-    relativeTime: formatRelativeTime(row.created_at),
-  };
+    relativeTime: formatInitialRelativeTime(row.created_at),
+  }));
+
+  return (
+    <PostFeed
+      initialPosts={initialPosts}
+      profileName={profileName}
+      profileImage="/denzell.jpg"
+    />
+  );
+}
+
+function formatInitialRelativeTime(createdAt: string) {
+  const elapsed = Date.now() - new Date(createdAt).getTime();
+  const minutes = Math.max(0, Math.floor(elapsed / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 export default function Home() {
-  const [posts, setPosts] = useState<Post[]>([]);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.realtime.setAuth();
-
-    async function loadPosts() {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, author_name, body, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (!error && data) {
-        setPosts(data.map(mapPost));
-      }
-    }
-
-    const channel = supabase
-      .channel("posts", { config: { private: true } })
-      .on("broadcast", { event: "*" }, (payload) => {
-        if (payload.event === "INSERT") {
-          const inserted = mapPost(payload.payload as PostRow);
-          setPosts((current) =>
-            current.some((post) => post.id === inserted.id)
-              ? current
-              : [inserted, ...current].slice(0, 50),
-          );
-        }
-      })
-      .subscribe();
-
-    loadPosts();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
   return (
     <main className="min-h-screen bg-[#f7f8fa]">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:grid-cols-[260px_minmax(0,1fr)]">
@@ -135,43 +102,9 @@ export default function Home() {
         <section className="min-w-0 space-y-4">
           <CreatePostForm authorName={profileName} avatarSrc="/denzell.jpg" />
 
-          <div className="space-y-3">
-            {posts.map((post) => (
-              <Card key={post.id}>
-                <CardContent className="pt-1">
-                  <div className="flex gap-3">
-                    {post.authorName === profileName ? (
-                      <Avatar size="lg">
-                        <AvatarImage src="/denzell.jpg" alt={post.authorName} />
-                        <AvatarFallback>MS</AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <Avatar size="lg">
-                        <AvatarFallback>
-                          {post.authorName
-                            .split(" ")
-                            .map((part) => part[0])
-                            .join("")
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <h3 className="font-semibold">{post.authorName}</h3>
-                        <time className="shrink-0 text-xs text-muted-foreground">
-                          {post.relativeTime}
-                        </time>
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-6">
-                        {post.body}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Suspense fallback={<PostFeedSkeleton />}>
+            <Posts />
+          </Suspense>
         </section>
       </div>
     </main>
